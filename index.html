@@ -258,6 +258,8 @@
       padding: 0 20px 18px;
     }
 
+    .actions.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
     .action-btn {
       min-height: 44px;
       padding: 0 14px;
@@ -754,8 +756,7 @@
 
         panel.className = "panel roll-mode";
         panel.innerHTML = overviewHtml("剩余未点人数", remainingStudents.length, STUDENTS.length, completed, false) +
-          '<div class="actions">' +
-            '<button class="action-btn primary" type="button" data-action="random"' + (remainingStudents.length ? '' : ' disabled') + '>随机点一位</button>' +
+          '<div class="actions two">' +
             '<button class="action-btn" type="button" data-action="undo"' + (state.history.length ? '' : ' disabled') + '>撤销</button>' +
             '<button class="action-btn" type="button" data-action="reset-roll"' + (completed ? '' : ' disabled') + '>重置</button>' +
           '</div>' +
@@ -882,10 +883,7 @@
         if (!action || action.disabled) return;
         var type = action.getAttribute("data-action");
 
-        if (type === "random") {
-          var randomId = state.remaining[Math.floor(Math.random() * state.remaining.length)];
-          removeStudent(randomId, null);
-        } else if (type === "undo") {
+        if (type === "undo") {
           undoRoll();
         } else if (type === "reset-roll") {
           askConfirm("重新开始点名？", "已点记录会被清空，22 位同学都会回到未点名单。", function () {
