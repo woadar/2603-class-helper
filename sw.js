@@ -1,4 +1,4 @@
-var CACHE_NAME = "class-helper-2603-v1";
+var CACHE_NAME = "class-helper-2603-v2";
 var APP_SHELL = [
   "./",
   "./index.html",
