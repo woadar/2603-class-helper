@@ -1,0 +1,940 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <meta name="theme-color" content="#eef4ff">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="2603班级助手">
+  <meta name="format-detection" content="telephone=no">
+  <meta name="description" content="2603 班点名与点亮工具，数据仅保存在本机。">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <title>2603 班级助手</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #17213d;
+      --muted: #6f7893;
+      --line: rgba(37, 61, 115, .10);
+      --panel: rgba(255, 255, 255, .82);
+      --blue: #3566e8;
+      --blue-deep: #234ab8;
+      --blue-soft: #eaf0ff;
+      --orange: #ffad32;
+      --orange-deep: #f17823;
+      --green: #25a86b;
+      --shadow: 0 14px 44px rgba(45, 65, 120, .12);
+      --soft-shadow: 0 8px 24px rgba(50, 70, 120, .08);
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body { margin: 0; min-height: 100%; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 8% 3%, rgba(86, 133, 255, .19), transparent 31%),
+        radial-gradient(circle at 96% 20%, rgba(255, 190, 83, .18), transparent 26%),
+        linear-gradient(180deg, #f6f8ff 0%, #edf3ff 55%, #f8faff 100%);
+      -webkit-font-smoothing: antialiased;
+      -webkit-tap-highlight-color: transparent;
+      overscroll-behavior-y: none;
+    }
+
+    button { font: inherit; }
+
+    button, [role="button"] { touch-action: manipulation; }
+
+    .app-shell {
+      width: min(100%, 620px);
+      min-height: 100vh;
+      margin: 0 auto;
+      padding: calc(18px + env(safe-area-inset-top)) 16px calc(32px + env(safe-area-inset-bottom));
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 6px 2px 20px;
+    }
+
+    .brand { min-width: 0; }
+
+    .brand h1 {
+      margin: 0;
+      font-size: clamp(25px, 7vw, 32px);
+      line-height: 1.12;
+      letter-spacing: -.6px;
+    }
+
+    .brand p {
+      margin: 7px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .privacy-badge {
+      flex: 0 0 auto;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 10px;
+      border: 1px solid rgba(37, 168, 107, .16);
+      border-radius: 999px;
+      color: #1d8155;
+      background: rgba(235, 255, 245, .75);
+      font-size: 12px;
+      font-weight: 650;
+    }
+
+    .privacy-badge::before {
+      content: "";
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 0 4px rgba(37, 168, 107, .12);
+    }
+
+    .tabs {
+      position: relative;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4px;
+      padding: 4px;
+      margin-bottom: 16px;
+      border: 1px solid rgba(255, 255, 255, .72);
+      border-radius: 18px;
+      background: rgba(227, 234, 251, .72);
+      box-shadow: inset 0 1px 2px rgba(45, 65, 115, .05);
+    }
+
+    .tab-indicator {
+      position: absolute;
+      z-index: 0;
+      top: 4px;
+      left: 4px;
+      width: calc(50% - 6px);
+      height: calc(100% - 8px);
+      border-radius: 14px;
+      background: #fff;
+      box-shadow: 0 5px 16px rgba(45, 65, 115, .12);
+      transition: transform .28s cubic-bezier(.22, .8, .22, 1);
+    }
+
+    .tabs[data-active="light"] .tab-indicator { transform: translateX(calc(100% + 4px)); }
+
+    .tab-btn {
+      position: relative;
+      z-index: 1;
+      min-height: 48px;
+      border: 0;
+      border-radius: 14px;
+      color: #707997;
+      background: transparent;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .tab-btn[aria-selected="true"] { color: var(--ink); }
+
+    .tab-btn span {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .tab-icon {
+      width: 18px;
+      height: 18px;
+      display: inline-grid;
+      place-items: center;
+    }
+
+    .panel {
+      border: 1px solid rgba(255, 255, 255, .72);
+      border-radius: 26px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      overflow: hidden;
+    }
+
+    .overview {
+      position: relative;
+      padding: 20px 20px 18px;
+      overflow: hidden;
+    }
+
+    .overview::after {
+      content: "";
+      position: absolute;
+      width: 140px;
+      height: 140px;
+      top: -64px;
+      right: -34px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(85, 128, 245, .16), rgba(85, 128, 245, 0) 70%);
+      pointer-events: none;
+    }
+
+    .overview-row {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+    .eyebrow {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 650;
+      letter-spacing: .4px;
+    }
+
+    .countline {
+      margin-top: 5px;
+      display: flex;
+      align-items: baseline;
+      gap: 5px;
+    }
+
+    .countline strong {
+      font-size: 36px;
+      line-height: 1;
+      letter-spacing: -1px;
+    }
+
+    .countline span {
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .percent {
+      min-width: 54px;
+      text-align: right;
+      color: var(--blue);
+      font-size: 20px;
+      font-weight: 800;
+    }
+
+    .progress-track {
+      height: 8px;
+      margin-top: 15px;
+      border-radius: 999px;
+      background: #e9edf7;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      width: 0;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #466fe3, #6b8df2);
+      box-shadow: 0 0 12px rgba(71, 112, 228, .35);
+      transition: width .35s ease;
+    }
+
+    .light-mode .progress-fill {
+      background: linear-gradient(90deg, #ff9f2e, #ffd158);
+      box-shadow: 0 0 14px rgba(255, 174, 47, .42);
+    }
+
+    .actions {
+      display: grid;
+      grid-template-columns: 1fr auto auto;
+      gap: 9px;
+      padding: 0 20px 18px;
+    }
+
+    .action-btn {
+      min-height: 44px;
+      padding: 0 14px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      color: var(--ink);
+      background: rgba(248, 250, 255, .88);
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform .15s ease, opacity .15s ease, background .15s ease;
+    }
+
+    .action-btn:active { transform: scale(.97); }
+    .action-btn:disabled { opacity: .38; cursor: default; }
+
+    .action-btn.primary {
+      border-color: transparent;
+      color: #fff;
+      background: linear-gradient(135deg, #3e6ce8, #2f58cc);
+      box-shadow: 0 8px 18px rgba(53, 102, 232, .25);
+    }
+
+    .light-mode .action-btn.primary {
+      color: #57350e;
+      background: linear-gradient(135deg, #ffc34e, #ffa62e);
+      box-shadow: 0 8px 18px rgba(255, 166, 46, .25);
+    }
+
+    .section {
+      padding: 18px 20px 22px;
+      border-top: 1px solid var(--line);
+    }
+
+    .section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 13px;
+    }
+
+    .section-head h2 {
+      margin: 0;
+      font-size: 15px;
+      letter-spacing: -.1px;
+    }
+
+    .hint {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .student-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .student-card {
+      position: relative;
+      min-width: 0;
+      min-height: 72px;
+      padding: 12px 12px 11px 15px;
+      border: 1px solid rgba(58, 83, 143, .10);
+      border-radius: 17px;
+      color: var(--ink);
+      background: linear-gradient(145deg, rgba(255,255,255,.96), rgba(246,248,255,.9));
+      text-align: left;
+      box-shadow: var(--soft-shadow);
+      cursor: pointer;
+      overflow: hidden;
+      transition: transform .16s ease, box-shadow .2s ease, border-color .2s ease, background .2s ease, opacity .2s ease;
+    }
+
+    .student-card:active { transform: scale(.97); }
+
+    .student-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      width: 4px;
+      border-radius: 4px;
+      background: #b8c7ef;
+    }
+
+    .student-name {
+      display: block;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-size: 16px;
+      font-weight: 760;
+      letter-spacing: .2px;
+    }
+
+    .student-id {
+      display: block;
+      margin-top: 5px;
+      color: #8991a8;
+      font-size: 11px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .light-mode .student-card::before { background: #dfe3ed; }
+
+    .student-card.is-lit {
+      border-color: rgba(255, 166, 39, .50);
+      background: linear-gradient(145deg, #fffdf7 0%, #fff0c8 100%);
+      box-shadow: 0 10px 26px rgba(245, 154, 29, .20), inset 0 0 0 1px rgba(255, 207, 91, .22);
+      transform: translateY(-1px);
+    }
+
+    .student-card.is-lit::before { background: linear-gradient(#ffc13d, #ff8f23); }
+
+    .student-card.is-lit::after {
+      content: "✓";
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      display: grid;
+      place-items: center;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      color: #fff;
+      background: linear-gradient(135deg, #ffc33f, #f58a21);
+      font-size: 12px;
+      font-weight: 900;
+      box-shadow: 0 4px 10px rgba(241, 120, 35, .25);
+    }
+
+    .student-card.is-removing {
+      pointer-events: none;
+      animation: removeCard .28s ease forwards;
+    }
+
+    @keyframes removeCard {
+      to { opacity: 0; transform: scale(.88) translateY(-6px); }
+    }
+
+    .empty-state {
+      grid-column: 1 / -1;
+      padding: 34px 14px 26px;
+      text-align: center;
+    }
+
+    .empty-orb {
+      width: 62px;
+      height: 62px;
+      display: grid;
+      place-items: center;
+      margin: 0 auto 13px;
+      border-radius: 22px;
+      color: #fff;
+      background: linear-gradient(145deg, #5a80e9, #3158cc);
+      box-shadow: 0 12px 28px rgba(53, 102, 232, .24);
+      font-size: 28px;
+      font-weight: 800;
+      transform: rotate(-4deg);
+    }
+
+    .empty-state strong { display: block; font-size: 17px; }
+
+    .empty-state p {
+      margin: 7px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .history {
+      margin-top: 17px;
+      padding-top: 15px;
+      border-top: 1px dashed rgba(42, 67, 124, .14);
+    }
+
+    .history summary {
+      list-style: none;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 34px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 650;
+      cursor: pointer;
+    }
+
+    .history summary::-webkit-details-marker { display: none; }
+
+    .history summary::after {
+      content: "⌄";
+      font-size: 18px;
+      transition: transform .2s ease;
+    }
+
+    .history[open] summary::after { transform: rotate(180deg); }
+
+    .history-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      padding: 9px 0 2px;
+    }
+
+    .history-chip {
+      padding: 6px 9px;
+      border-radius: 999px;
+      color: #68718d;
+      background: #eef1f8;
+      font-size: 12px;
+    }
+
+    .footer-note {
+      padding: 17px 8px 0;
+      color: #8a92a8;
+      text-align: center;
+      font-size: 11px;
+      line-height: 1.5;
+    }
+
+    .toast {
+      position: fixed;
+      z-index: 30;
+      left: 50%;
+      bottom: calc(22px + env(safe-area-inset-bottom));
+      width: max-content;
+      max-width: calc(100vw - 34px);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 11px 12px 11px 15px;
+      border: 1px solid rgba(255,255,255,.16);
+      border-radius: 15px;
+      color: #fff;
+      background: rgba(23, 33, 61, .94);
+      box-shadow: 0 12px 30px rgba(23, 33, 61, .24);
+      font-size: 13px;
+      opacity: 0;
+      transform: translate(-50%, 18px);
+      pointer-events: none;
+      transition: opacity .22s ease, transform .22s ease;
+    }
+
+    .toast.show { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; }
+
+    .toast button {
+      min-height: 30px;
+      padding: 0 9px;
+      border: 0;
+      border-radius: 9px;
+      color: #dce6ff;
+      background: rgba(255,255,255,.12);
+      font-size: 12px;
+      font-weight: 750;
+      cursor: pointer;
+    }
+
+    .confirm-layer {
+      position: fixed;
+      z-index: 40;
+      inset: 0;
+      display: grid;
+      place-items: end center;
+      padding: 20px 16px calc(18px + env(safe-area-inset-bottom));
+      background: rgba(17, 26, 52, .32);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .2s ease;
+    }
+
+    .confirm-layer.show { opacity: 1; pointer-events: auto; }
+
+    .confirm-card {
+      width: min(100%, 500px);
+      padding: 20px;
+      border-radius: 24px;
+      background: #fff;
+      box-shadow: 0 24px 60px rgba(16, 25, 52, .24);
+      transform: translateY(28px);
+      transition: transform .25s cubic-bezier(.22,.8,.22,1);
+    }
+
+    .confirm-layer.show .confirm-card { transform: translateY(0); }
+
+    .confirm-card h3 { margin: 0 0 7px; font-size: 19px; }
+
+    .confirm-card p {
+      margin: 0 0 18px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .confirm-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+    .confirm-actions button {
+      min-height: 46px;
+      border: 0;
+      border-radius: 14px;
+      font-weight: 750;
+      cursor: pointer;
+    }
+
+    .confirm-actions .cancel { color: var(--ink); background: #eef1f8; }
+    .confirm-actions .danger { color: #fff; background: #e45151; }
+
+    @media (min-width: 480px) {
+      .student-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <h1>2603 班级助手</h1>
+        <p>点名与课堂互动</p>
+      </div>
+      <div class="privacy-badge">仅存本机</div>
+    </header>
+
+    <nav class="tabs" id="tabs" data-active="roll" aria-label="功能切换">
+      <div class="tab-indicator" aria-hidden="true"></div>
+      <button class="tab-btn" id="rollTab" data-tab="roll" aria-selected="true">
+        <span><i class="tab-icon" aria-hidden="true">✓</i>点名</span>
+      </button>
+      <button class="tab-btn" id="lightTab" data-tab="light" aria-selected="false">
+        <span><i class="tab-icon" aria-hidden="true">☀</i>点亮</span>
+      </button>
+    </nav>
+
+    <section class="panel" id="mainPanel" aria-live="polite"></section>
+
+    <p class="footer-note">进度只保存在当前手机的浏览器里，不会上传名单。<br>首次打开后，即使临时断网也可继续使用。</p>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="assertive">
+    <span id="toastText"></span>
+    <button id="toastAction" type="button" hidden>撤销</button>
+  </div>
+
+  <div class="confirm-layer" id="confirmLayer" aria-hidden="true">
+    <div class="confirm-card" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
+      <h3 id="confirmTitle">确认重新开始？</h3>
+      <p id="confirmText">当前进度会被清空，名单将恢复为初始状态。</p>
+      <div class="confirm-actions">
+        <button class="cancel" id="confirmCancel" type="button">取消</button>
+        <button class="danger" id="confirmOk" type="button">确认重置</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      "use strict";
+
+      var STUDENTS = [
+        { id: "2501552", name: "华梦研" },
+        { id: "2601509", name: "薄纯轩" },
+        { id: "2601512", name: "戴翌帆" },
+        { id: "2601519", name: "葛桓辰" },
+        { id: "2601520", name: "管亭皓" },
+        { id: "2601527", name: "李兆兴" },
+        { id: "2601531", name: "刘丹怡" },
+        { id: "2601532", name: "刘嘉诚" },
+        { id: "2601534", name: "刘璐" },
+        { id: "2601538", name: "刘芷瑄" },
+        { id: "2601539", name: "马翠璟" },
+        { id: "2601540", name: "马瑞丹" },
+        { id: "2601541", name: "马欣卓" },
+        { id: "2601542", name: "马旭" },
+        { id: "2601547", name: "隋雨珊" },
+        { id: "2601553", name: "韦岩" },
+        { id: "2601554", name: "温蕙瑄" },
+        { id: "2601556", name: "吴荣添" },
+        { id: "2601562", name: "于鑫" },
+        { id: "2601565", name: "张颢潆" },
+        { id: "2601566", name: "张鹤潆" },
+        { id: "2601572", name: "赵佳乐" }
+      ];
+
+      var STORAGE_KEY = "class-helper-2603-v1";
+      var knownIds = STUDENTS.map(function (student) { return student.id; });
+      var studentMap = {};
+      STUDENTS.forEach(function (student) { studentMap[student.id] = student; });
+
+      function initialState() {
+        return {
+          tab: "roll",
+          remaining: knownIds.slice(),
+          history: [],
+          lit: []
+        };
+      }
+
+      function validIds(list) {
+        if (!Array.isArray(list)) return [];
+        return list.filter(function (id, index) {
+          return knownIds.indexOf(String(id)) !== -1 && list.indexOf(id) === index;
+        }).map(String);
+      }
+
+      function loadState() {
+        var fresh = initialState();
+        try {
+          var saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+          if (!saved || typeof saved !== "object") return fresh;
+
+          var history = validIds(saved.history);
+          var remaining = validIds(saved.remaining).filter(function (id) {
+            return history.indexOf(id) === -1;
+          });
+
+          knownIds.forEach(function (id) {
+            if (history.indexOf(id) === -1 && remaining.indexOf(id) === -1) remaining.push(id);
+          });
+
+          return {
+            tab: saved.tab === "light" ? "light" : "roll",
+            remaining: remaining,
+            history: history,
+            lit: validIds(saved.lit)
+          };
+        } catch (error) {
+          return fresh;
+        }
+      }
+
+      var state = loadState();
+      var panel = document.getElementById("mainPanel");
+      var tabs = document.getElementById("tabs");
+      var toast = document.getElementById("toast");
+      var toastText = document.getElementById("toastText");
+      var toastAction = document.getElementById("toastAction");
+      var confirmLayer = document.getElementById("confirmLayer");
+      var confirmTitle = document.getElementById("confirmTitle");
+      var confirmText = document.getElementById("confirmText");
+      var confirmOk = document.getElementById("confirmOk");
+      var toastTimer;
+      var pendingConfirm = null;
+
+      function saveState() {
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (error) {}
+      }
+
+      function escapeHtml(value) {
+        return String(value)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/\"/g, "&quot;")
+          .replace(/'/g, "&#039;");
+      }
+
+      function cardHtml(student, lit) {
+        return '<button class="student-card' + (lit ? ' is-lit' : '') + '" type="button" data-id="' + escapeHtml(student.id) + '" aria-pressed="' + (lit ? 'true' : 'false') + '">' +
+          '<span class="student-name">' + escapeHtml(student.name) + '</span>' +
+          '<span class="student-id">' + escapeHtml(student.id) + '</span>' +
+        '</button>';
+      }
+
+      function overviewHtml(label, current, total, complete, lightMode) {
+        var percent = total ? Math.round((complete / total) * 100) : 0;
+        return '<div class="overview">' +
+          '<div class="overview-row">' +
+            '<div><div class="eyebrow">' + label + '</div><div class="countline"><strong>' + current + '</strong><span>/ ' + total + ' 人</span></div></div>' +
+            '<div class="percent">' + percent + '%</div>' +
+          '</div>' +
+          '<div class="progress-track"><div class="progress-fill" style="width:' + percent + '%"></div></div>' +
+        '</div>';
+      }
+
+      function renderRoll() {
+        var remainingStudents = state.remaining.map(function (id) { return studentMap[id]; }).filter(Boolean);
+        var completed = STUDENTS.length - remainingStudents.length;
+        var cards = remainingStudents.map(function (student) { return cardHtml(student, false); }).join("");
+        if (!cards) {
+          cards = '<div class="empty-state"><div class="empty-orb">✓</div><strong>全部点名完成</strong><p>22 位同学都已点到，可以重新开始下一轮。</p></div>';
+        }
+
+        var history = state.history.map(function (id) {
+          return '<span class="history-chip">' + escapeHtml(studentMap[id].name) + '</span>';
+        }).join("");
+
+        panel.className = "panel roll-mode";
+        panel.innerHTML = overviewHtml("剩余未点人数", remainingStudents.length, STUDENTS.length, completed, false) +
+          '<div class="actions">' +
+            '<button class="action-btn primary" type="button" data-action="random"' + (remainingStudents.length ? '' : ' disabled') + '>随机点一位</button>' +
+            '<button class="action-btn" type="button" data-action="undo"' + (state.history.length ? '' : ' disabled') + '>撤销</button>' +
+            '<button class="action-btn" type="button" data-action="reset-roll"' + (completed ? '' : ' disabled') + '>重置</button>' +
+          '</div>' +
+          '<div class="section">' +
+            '<div class="section-head"><h2>未点名单</h2><span class="hint">点姓名后消失</span></div>' +
+            '<div class="student-grid">' + cards + '</div>' +
+            (state.history.length ? '<details class="history"><summary>已点 ' + state.history.length + ' 人</summary><div class="history-list">' + history + '</div></details>' : '') +
+          '</div>';
+      }
+
+      function renderLight() {
+        var cards = STUDENTS.map(function (student) {
+          return cardHtml(student, state.lit.indexOf(student.id) !== -1);
+        }).join("");
+
+        panel.className = "panel light-mode";
+        panel.innerHTML = overviewHtml("已点亮人数", state.lit.length, STUDENTS.length, state.lit.length, true) +
+          '<div class="actions">' +
+            '<button class="action-btn primary" type="button" data-action="light-all"' + (state.lit.length === STUDENTS.length ? ' disabled' : '') + '>全部点亮</button>' +
+            '<button class="action-btn" type="button" data-action="undo-light"' + (state.lit.length ? '' : ' disabled') + '>撤销</button>' +
+            '<button class="action-btn" type="button" data-action="reset-light"' + (state.lit.length ? '' : ' disabled') + '>清空</button>' +
+          '</div>' +
+          '<div class="section">' +
+            '<div class="section-head"><h2>全班名单</h2><span class="hint">再次点击可熄灭</span></div>' +
+            '<div class="student-grid">' + cards + '</div>' +
+          '</div>';
+      }
+
+      function render() {
+        tabs.setAttribute("data-active", state.tab);
+        document.getElementById("rollTab").setAttribute("aria-selected", state.tab === "roll" ? "true" : "false");
+        document.getElementById("lightTab").setAttribute("aria-selected", state.tab === "light" ? "true" : "false");
+        if (state.tab === "roll") renderRoll(); else renderLight();
+      }
+
+      function showToast(message, withUndo) {
+        clearTimeout(toastTimer);
+        toastText.textContent = message;
+        toastAction.hidden = !withUndo;
+        toast.classList.add("show");
+        toastTimer = setTimeout(function () { toast.classList.remove("show"); }, 2600);
+      }
+
+      function removeStudent(id, card) {
+        var index = state.remaining.indexOf(id);
+        if (index === -1) return;
+        var finish = function () {
+          state.remaining.splice(index, 1);
+          state.history.push(id);
+          saveState();
+          render();
+          showToast("已点到：" + studentMap[id].name, true);
+        };
+        if (card) {
+          card.classList.add("is-removing");
+          setTimeout(finish, 220);
+        } else {
+          finish();
+        }
+      }
+
+      function undoRoll() {
+        var id = state.history.pop();
+        if (!id) return;
+        state.remaining.unshift(id);
+        saveState();
+        render();
+        showToast("已恢复：" + studentMap[id].name, false);
+      }
+
+      function toggleLight(id) {
+        var index = state.lit.indexOf(id);
+        if (index === -1) {
+          state.lit.push(id);
+          showToast("已点亮：" + studentMap[id].name, true);
+        } else {
+          state.lit.splice(index, 1);
+          showToast("已熄灭：" + studentMap[id].name, false);
+        }
+        saveState();
+        render();
+      }
+
+      function undoLight() {
+        var id = state.lit.pop();
+        if (!id) return;
+        saveState();
+        render();
+        showToast("已撤销点亮：" + studentMap[id].name, false);
+      }
+
+      function askConfirm(title, text, callback) {
+        pendingConfirm = callback;
+        confirmTitle.textContent = title;
+        confirmText.textContent = text;
+        confirmLayer.classList.add("show");
+        confirmLayer.setAttribute("aria-hidden", "false");
+        setTimeout(function () { confirmOk.focus(); }, 60);
+      }
+
+      function closeConfirm() {
+        confirmLayer.classList.remove("show");
+        confirmLayer.setAttribute("aria-hidden", "true");
+        pendingConfirm = null;
+      }
+
+      tabs.addEventListener("click", function (event) {
+        var button = event.target.closest("[data-tab]");
+        if (!button) return;
+        state.tab = button.getAttribute("data-tab");
+        saveState();
+        render();
+      });
+
+      panel.addEventListener("click", function (event) {
+        var card = event.target.closest(".student-card");
+        if (card) {
+          var id = card.getAttribute("data-id");
+          if (state.tab === "roll") removeStudent(id, card); else toggleLight(id);
+          return;
+        }
+
+        var action = event.target.closest("[data-action]");
+        if (!action || action.disabled) return;
+        var type = action.getAttribute("data-action");
+
+        if (type === "random") {
+          var randomId = state.remaining[Math.floor(Math.random() * state.remaining.length)];
+          removeStudent(randomId, null);
+        } else if (type === "undo") {
+          undoRoll();
+        } else if (type === "reset-roll") {
+          askConfirm("重新开始点名？", "已点记录会被清空，22 位同学都会回到未点名单。", function () {
+            state.remaining = knownIds.slice();
+            state.history = [];
+            saveState();
+            render();
+            showToast("点名名单已重置", false);
+          });
+        } else if (type === "light-all") {
+          state.lit = knownIds.slice();
+          saveState();
+          render();
+          showToast("全班已点亮", false);
+        } else if (type === "undo-light") {
+          undoLight();
+        } else if (type === "reset-light") {
+          askConfirm("清空所有点亮？", "当前点亮进度会被清空，名单仍会保留。", function () {
+            state.lit = [];
+            saveState();
+            render();
+            showToast("点亮状态已清空", false);
+          });
+        }
+      });
+
+      toastAction.addEventListener("click", function () {
+        toast.classList.remove("show");
+        if (state.tab === "roll") undoRoll(); else undoLight();
+      });
+
+      document.getElementById("confirmCancel").addEventListener("click", closeConfirm);
+      confirmLayer.addEventListener("click", function (event) {
+        if (event.target === confirmLayer) closeConfirm();
+      });
+      confirmOk.addEventListener("click", function () {
+        var callback = pendingConfirm;
+        closeConfirm();
+        if (callback) callback();
+      });
+
+      render();
+
+      if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost")) {
+        window.addEventListener("load", function () {
+          navigator.serviceWorker.register("./sw.js").catch(function () {});
+        });
+      }
+    })();
+  </script>
+</body>
+</html>
