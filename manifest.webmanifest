@@ -1,0 +1,19 @@
+{
+  "name": "2603 班级助手",
+  "short_name": "班级助手",
+  "description": "2603 班点名与点亮工具",
+  "lang": "zh-CN",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#eef4ff",
+  "theme_color": "#eef4ff",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
